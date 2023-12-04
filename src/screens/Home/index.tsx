@@ -1,74 +1,86 @@
 /* Externals */ 
-import { Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import { FlatList, View } from "react-native";
 import { StatusBar } from 'expo-status-bar';
 
-/* Icons */ 
-import Logo from '../../assets/Logo.svg';
-import IconPlus from '../../assets/IconPlus.svg';
-import IconClipboard from '../../assets/IconClipboard.svg';
-import IconTrash from '../../assets/IconTrash.svg';
-import IconCheck from '../../assets/IconCheck.svg';
+/* Components */
+import { ListEmpty } from "../../components/ListEmpty";
+import { Card } from "../../components/Card";
+import { TodoHeader } from "../../components/TodoHeader";
+import { Header } from "../../components/Header";
 
 /* Style */
 import { styles } from "./styles"; 
 
+interface Task {
+  id: string;
+  text: string;
+  finished: boolean;
+}
+
 export function Home() {
-  const showIconCheck = true;
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [task, setTask] = useState('');
+  const totalCreated = tasks.length;
+  const totalFinished = tasks.filter(task => task.finished === true).length;
+
+  function handleChangeInput(text: string) {
+    setTask(text);
+  }
+
+  function handleAddTask(task: string) {
+    const newTask = {
+      id: Math.random().toString().slice(2),
+      text: task,
+      finished: false,
+    }
+
+    setTasks(prevState => [...prevState, newTask]);
+    setTask('');
+  }
+
+  function handleDeleteTask(taskId: string) {
+    setTasks(tasks.filter(task => task.id !== taskId));
+  }
+
+  function handleToggleCheckTask(taskId: string) {
+    setTasks(prevState => prevState.map(task => {
+      if (task.id === taskId) {
+        task.finished = !task.finished;
+      }
+
+      return task;
+    }))
+  }
 
   return (
     <View style={styles.container}>
       <StatusBar style="auto" />
-      <View style={styles.header}>
-        <Logo width={110.34} height={32} />
-        <View style={styles.formContainer}>
-          <TextInput 
-            style={styles.input} 
-            placeholder="Adicione uma nova tarefa"
-            placeholderTextColor="#808080"
-          />
-          <TouchableOpacity style={styles.button}>
-            <IconPlus width={15.97} height={15.97} />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <Header 
+        text={task}
+        onChangeInput={handleChangeInput}
+        onAddTask={handleAddTask}
+      />
+      
       <View style={styles.todos}>
-        <View style={styles.todosHeader}>
-          <View style={styles.todosInfo}>
-            <Text style={styles.todosLabel}>Criadas</Text>
-            <View style={styles.todosBox}>
-              <Text style={styles.todosValue}>0</Text>
-            </View>
-          </View>
-          <View style={styles.todosInfo}>
-            <Text style={styles.todosLabel}>Concluídas</Text>
-            <View style={styles.todosBox}>
-              <Text style={styles.todosValue}>0</Text>
-            </View>
-          </View>
-        </View>
-        <View style={styles.todosEmpty}>
-          <IconClipboard width={56} height={56} />
-          <Text style={styles.todosTitle}>Você ainda não tem tarefas cadastradas</Text>
-          <Text style={styles.todosSubtitle}>Crie tarefas e organize seus itens a fazer</Text>
-        </View>
-        <View style={styles.card}>
-          <TouchableOpacity style={styles.cardButtonCheck}>
-            {showIconCheck 
-              ? <View style={styles.unchecked}></View> 
-              : <View style={styles.checked}>
-                  <IconCheck width={13.54} height={8.69} />
-                </View>
-            }
-          </TouchableOpacity>
+        <TodoHeader 
+          created={totalCreated}
+          finished={totalFinished}
+        />
     
-          <Text style={styles.cardText}>
-            Integer urna interdum massa libero auctor neque turpis turpis semper.
-          </Text>
-        
-          <TouchableOpacity style={styles.cardButtonTrash}>
-            <IconTrash width={15.12} height={17} />
-          </TouchableOpacity>
-        </View>
+        <FlatList 
+          data={tasks}
+          keyExtractor={item => item.id}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => (
+            <Card 
+              task={item} 
+              onRemoveTask={handleDeleteTask}
+              onCheckTask={handleToggleCheckTask}
+            />
+          )}
+          ListEmptyComponent={() => (<ListEmpty />)}
+        />
       </View>
     </View>
   )
